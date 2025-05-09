@@ -1,0 +1,48 @@
+name: .NET Core WebApp CI
+
+on:
+  push:
+    branches: [ "*" ]         # Aciona para qualquer branch
+  schedule:
+    - cron: "0 * * * *"       # Executa a cada hora (em cima da hora cheia)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Faz checkout do código (action oficial do GitHub)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Instala o .NET SDK (action oficial do GitHub)
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'    # Ajuste a versão conforme seu projeto
+
+      # 3. Restaura as dependências do projeto usando comando personalizado
+      - name: Restore dependencies
+        run: dotnet restore **/*.csproj
+
+      # 4. Compila o projeto
+      - name: Build
+        run: dotnet build **/*.csproj --no-restore --configuration Release
+
+      # 5. (Opcional) Publica o projeto para gerar os artefatos de build (boa prática de CI)
+      - name: Publish
+        run: dotnet publish **/*.csproj -c Release -o ./publish
+
+      # 6. Script personalizado: Lista o conteúdo do diretório de publicação para visualizar os artefatos gerados
+      - name: Exibir arquivos publicados
+        run: ls -la ./publish
+
+      # 7. (Opcional) Se tiver projetos de teste, rode-os
+      # Caso não tenha testes, esse passo será ignorado e não causará falha no fluxo
+      - name: Run tests (if any)
+        run: |
+          if ls tests/**/*.csproj 1> /dev/null 2>&1; then
+            dotnet test tests/**/*.csproj --no-build --verbosity normal
+          else
+            echo "No tests found"
+          fi
